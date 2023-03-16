@@ -1,10 +1,24 @@
 <template>
   <el-card class="box-card">
     <el-alert class="AlertTitle"
-      title="本科论文查询网站"
+      title="本科论文查询网站, 论文已经在维普、万方查过重。懂的都懂！！！！"
       type="success"
       effect="dark">
     </el-alert>
+
+    <img src="../assets/论文2.jpg" class="img"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <img src="../assets/论文3.jpg" class="img">
+<!--    <el-row>-->
+<!--&lt;!&ndash;      <el-col :span="4">&ndash;&gt;-->
+<!--&lt;!&ndash;        <img src="../assets/lunwen.jpg">&ndash;&gt;-->
+<!--&lt;!&ndash;      </el-col>&ndash;&gt;-->
+<!--      <el-col :span="4" class="img">-->
+<!--        <img src="../assets/论文2.jpg">-->
+<!--      </el-col>-->
+<!--    </el-row>-->
+
+
 <!--  查询  -->
     <el-row :gutter="15">
 <!--  长度    -->
@@ -17,7 +31,7 @@
           <!--          <el-option label="订单号" value="2"></el-option>-->
           <!--          <el-option label="用户电话" value="3"></el-option>-->
           <!--        </el-select>-->
-          <el-button slot="append" icon="el-icon-search" @click="getTheis()"></el-button>
+          <el-button slot="append" icon="el-icon-search" @click="getTheisData()"></el-button>
         </el-input>
       </el-col>
     </el-row>
@@ -30,9 +44,18 @@
           {{scope.row.size}}{{scope.row.type}}
         </template>
       </el-table-column>
-<!--      <el-tab-column label="下载" width="120"></el-tab-column>-->
-      <el-table-column label="获取"  prop="tips" width="300" ></el-table-column>
+<!--      <el-tab-column label="下载" width="120">-->
+<!--        <template slot-scope="scope">-->
+<!--          <el-button size="mini" type="danger" icon="el-icon-download" circle @click="download(scope.row)"></el-button>-->
+<!--        </template>-->
+<!--      </el-tab-column>-->
+      <el-table-column prop="tips" label="获取"   width="300" ></el-table-column>
       <el-table-column prop="prices" label="价格" width="120"></el-table-column>
+      <el-table-column label="下载" width="120">
+          <template slot-scope="scope">
+            <el-button size="mini" type="danger" icon="el-icon-download" circle @click="download(scope.row)"></el-button>
+          </template>
+      </el-table-column>
     </el-table>
 
     <!--     分页 -->
@@ -48,10 +71,27 @@
       layout="total, sizes, prev, pager, next, jumper"
       :total="total" background>
     </el-pagination>
+
+<!-- 下载对话框  -->
+    <el-dialog title="下载" :visible.sync="downloadDialogVisbile"width="50%" @close="closeDownloadVisbile">
+      <!--  table 表格  -->
+      <el-table :data="downlist" style="width: 100%" border size="medium" border>
+        <el-table-column prop="name"  label="名称"></el-table-column>
+
+        <el-table-column prop="url"  label="下载">
+          <template slot-scope="scope">
+<!--            <a :href=scope.row.url :download=scope.row.url >点击下载</a>-->
+            <el-button @click="downloadUrl(scope.row.url)">下载</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
   </el-card>
 </template>
 
 <script>
+import axios from "axios";
+
 export default {
   name: "TheisVue",
   data () {
@@ -65,39 +105,69 @@ export default {
         page_number: 5 // 这个值要和:page-sizes 数组的第一个值相同
       },
       theislist: [],  // 论文列表
+      downlist: [],   // 下载列表
       total: 0,
+      downloadDialogVisbile: false, // 下载对话框
     }
   },
   created () {
     this.getTheis()
   },
   methods: {
-    async getTheis () {
+    // 点击查询按钮，页面的index 自动变为1
+    getTheisData() {
+      this.queryInfo.page_index = 1;
+      this.getTheis()
+    },
+
+    async getTheis() {
       const {data: res} = await this.$http.get('get_theis_title', {params: this.queryInfo})
       console.log('res = ', res)
       if (res.status !== 200) {
         return this.$message.error('获取论文列表失败')
       }
-      res.data.forEach(item => {
-        item.prices = '8.88元';
-        item.tips='QQ:2129811510  ' + ' 微信:tobebetterman888'
-      })
-      this.theislist = res.data
+      console.log('res.data =', res.data);
+      if (res.data != null) {
+        res.data.forEach(item => {
+          item.prices = '8.88元';
+          item.tips = 'QQ:2129811510  ' + ' 微信:tobebetterman888'
+        })
+        this.theislist = res.data
+      } else {
+        this.theislist = [];
+      }
       this.total = res.total
     },
 
-    handleSizeChange (newSize) {
-      console.log('newSize=',newSize);
+    handleSizeChange(newSize) {
+      console.log('newSize=', newSize);
       this.queryInfo.page_number = newSize
       // 重新获取数据
       this.getTheis()
     },
 
-    handleCurrentChange (newPage){
+    handleCurrentChange(newPage) {
       this.queryInfo.page_index = newPage
       // 重新获取数据
       this.getTheis()
-    }
+    },
+    async download(info) {
+      // 获取数据
+      const {data: res} = await this.$http.get('get_url', {params: {'search': info.title}})
+      console.log('res = ', res)
+      if (res.status !== 200) {
+        return this.$message.error('下载获取失败')
+      }
+      this.downlist = res.data
+      // 显示对话框
+      this.downloadDialogVisbile = true
+    },
+    closeDownloadVisbile() {
+
+    },
+    async downloadUrl(url) {
+      window.location.href = 'http://101.42.97.221:8080/get_file?path=' + url;
+    },
   }
 }
 </script>
@@ -127,5 +197,8 @@ export default {
   font-weight: normal;
   font-style: normal;
   text-align:center;
+}
+.img {
+  width: 400px;
 }
 </style>
