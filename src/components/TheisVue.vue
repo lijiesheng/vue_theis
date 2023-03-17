@@ -51,10 +51,16 @@
 <!--      </el-tab-column>-->
       <el-table-column prop="tips" label="获取"   width="300" ></el-table-column>
       <el-table-column prop="prices" label="价格" width="120"></el-table-column>
-      <el-table-column label="下载" width="120">
+      <el-table-column label="下载、预览" width="120">
           <template slot-scope="scope">
             <el-button size="mini" type="danger" icon="el-icon-download" circle @click="download(scope.row)"></el-button>
           </template>
+      </el-table-column>
+
+      <el-table-column label="预览" width="120">
+        <template slot-scope="scope">
+          <el-button size="mini" type="danger" icon="el-icon-download" circle @click="yulan"></el-button>
+        </template>
       </el-table-column>
     </el-table>
 
@@ -78,20 +84,42 @@
       <el-table :data="downlist" style="width: 100%" border size="medium" border>
         <el-table-column prop="name"  label="名称"></el-table-column>
 
-        <el-table-column prop="url"  label="下载">
+        <el-table-column prop="url"  label="操作">
           <template slot-scope="scope">
 <!--            <a :href=scope.row.url :download=scope.row.url >点击下载</a>-->
             <el-button @click="downloadUrl(scope.row.url)">下载</el-button>
+<!--            <el-button @click="yulan(scope.row.url)">预览</el-button>-->
           </template>
         </el-table-column>
       </el-table>
+    </el-dialog>
+<!--  预览对话框  -->
+    <el-dialog title="PDF预览1" :visible.sync="yulanDialogVisbile"width="90%" @close="closeDownloadVisbile">
+<!--      <iframe :src="pdfSrc" frameborder="0" style="width: 100%; height: 100%"></iframe>-->
+<!--      <iframe-->
+<!--        src='`https://view.officeapps.live.com/op/view.aspx?src==http://101.42.97.221/logs/fanlai/11111.docx'-->
+<!--        width=500-->
+<!--        height=500-->
+<!--        frameborder='0'>-->
+<!--      </iframe>-->
+<!--      <iframe-->
+<!--        src='`https://view.xdocin.com/xdoc?_xdoc=http://101.42.97.221/logs/fanlai/11111.docx'-->
+<!--        width=500-->
+<!--        height=500-->
+<!--        frameborder='0'>-->
+<!--      </iframe>-->
+
+      <iframe :src="pdfSrc" frameborder="0" style="width: 100%; height: 100%">
+
+      </iframe>
+
     </el-dialog>
   </el-card>
 </template>
 
 <script>
 import axios from "axios";
-
+import pdf from 'vue-pdf';
 export default {
   name: "TheisVue",
   data () {
@@ -108,6 +136,10 @@ export default {
       downlist: [],   // 下载列表
       total: 0,
       downloadDialogVisbile: false, // 下载对话框
+      yulanDialogVisbile: false, // 预览对话框
+      // pdf 相关
+      numPages: 10,  // pdf 最多展示10页
+      pdfSrc: "http://101.42.97.221/logs/fanlai/Go面试题new.pdf"
     }
   },
   created () {
@@ -151,6 +183,9 @@ export default {
       // 重新获取数据
       this.getTheis()
     },
+    yulan() {
+      this.yulanDialogVisbile = true
+    },
     async download(info) {
       // 获取数据
       const {data: res} = await this.$http.get('get_url', {params: {'search': info.title}})
@@ -163,7 +198,7 @@ export default {
       this.downloadDialogVisbile = true
     },
     closeDownloadVisbile() {
-
+      this.yulanDialogVisbile = false
     },
     async downloadUrl(url) {
       window.location.href = 'http://101.42.97.221:8080/get_file?path=' + url;
